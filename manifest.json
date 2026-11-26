@@ -1,0 +1,44 @@
+{
+  "manifest_version": 3,
+  "name": "FACEIT Ping Inspector",
+  "version": "1.0.0",
+  "description": "Проверка пинга сервера FACEIT перед подключением",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAucgO8GBwLG3UNnPm6saJyqEQfyHpb0Xtk19VXkUiiVus4ZOFofPymQFWmdoIRpPjd2xs1UIcTUNuKZxt6Tpk7k3O+mtnb9qmDEdAfPxd4w/GvT9KmRjtgYDsWhhdmfSNO/wloNCj+Uloo79ZkgTlYmfDzWT9T3wjJUHxkGxalm/Z1KssCfueDH1ZTpmLHCXmgCE5eUHWnjDOWB8yaBNICvZDW2zCo+j6/ktmqw4zJqph0TI0vMerzhnqjjmwuA+y0TZV9r5rhkgje9ixITuQRNHnY3H9tF+pFDN3jjQ2A1+MjOOsdOh3nhBrnkIUFOaWh2PXYEUmx97WTCB0AGJR2QIDAQAB",
+  "permissions": [
+    "storage",
+    "nativeMessaging"
+  ],
+  "host_permissions": [
+    "https://*.faceit.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.faceit.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "styles.css"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>FACEIT Ping</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo">FACEIT PING</div>
+      <div id="host-status" class="status-indicator offline">Хост оффлайн</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Текущий сервер</div>
+      <div class="row">
+        <span class="label">IP сервера:</span>
+        <span id="current-ip" class="val">Не обнаружен</span>
+      </div>
+      <div class="row">
+        <span class="label">Хостинг:</span>
+        <span id="current-provider" class="val">--</span>
+      </div>
+      <div class="row">
+        <span class="label">Пинг:</span>
+        <span id="current-ping" class="val highlight">-- мс</span>
+      </div>
+      <div class="row">
+        <span class="label">Потери:</span>
+        <span id="current-loss" class="val">0%</span>
+      </div>
+      <div class="row">
+        <span class="label">Статус:</span>
+        <span id="current-status" class="val status-tag">Ожидание</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Ручная проверка</div>
+      <div class="input-group">
+        <input type="text" id="manual-ip" placeholder="170.168.20.63:27029" />
+        <button id="btn-manual-check">Замер</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="btn-refresh-last" class="action-btn">Обновить пинг</button>
+      <button id="btn-copy-ip" class="action-btn secondary">Копировать IP</button>
+    </div>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
