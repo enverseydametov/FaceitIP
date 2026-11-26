@@ -1,23 +1,23 @@
 ﻿$ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$pyExe = (Get-Command python -ErrorAction SilentlyContinue).Source
-if (-not $pyExe) {
-    $pyExe = Join-Path $env:LOCALAPPDATA "Python\bin\python.exe"
+$csPath = Join-Path $scriptDir "faceit_ping_host.cs"
+$exePath = Join-Path $scriptDir "faceit_ping_host.exe"
+$cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
+
+# Компиляция при необходимости
+if ((Test-Path $cscPath) -and (Test-Path $csPath)) {
+    & $cscPath /target:exe /optimize+ /out:"$exePath" /nologo "$csPath"
 }
 
-$batPath = Join-Path $scriptDir "faceit_ping_host.bat"
-$batContent = "@echo off`r`n`"$pyExe`" -u `"%~dp0faceit_ping_host.py`"`r`n"
-[System.IO.File]::WriteAllText($batPath, $batContent, [System.Text.Encoding]::ASCII)
-
-$escapedBatPath = $batPath.Replace('\', '\\')
+$escapedExePath = $exePath.Replace('\', '\\')
 $jsonPath = Join-Path $scriptDir "com.faceit.ping.inspector.json"
 
 $manifest = @"
 {
   "name": "com.faceit.ping.inspector",
   "description": "FACEIT Server Ping Inspector Native Host",
-  "path": "$escapedBatPath",
+  "path": "$escapedExePath",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://kdhmjiinfceafbkbinohpcefneedhjjo/"
@@ -35,4 +35,4 @@ if (-not (Test-Path $regPath)) {
 Set-ItemProperty -Path $regPath -Name "(default)" -Value $jsonPath
 
 Write-Output "Хост зарегистрирован: $jsonPath"
-Write-Output "Python: $pyExe"
+Write-Output "Исполняемый файл: $exePath"

@@ -1,7 +1,7 @@
 {
   "name": "com.faceit.ping.inspector",
   "description": "FACEIT Server Ping Inspector Native Host",
-  "path": "C:\\Users\\enver\\AndroidStudioProjects\\FaceitIP\\native_host\\faceit_ping_host.bat",
+  "path": "C:\\Users\\enver\\AndroidStudioProjects\\FaceitIP\\native_host\\faceit_ping_host.exe",
   "type": "stdio",
   "allowed_origins": [
     "chrome-extension://kdhmjiinfceafbkbinohpcefneedhjjo/"

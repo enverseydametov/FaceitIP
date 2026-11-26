@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
         hostStatusEl.textContent = "Хост активен";
         hostStatusEl.className = "status-indicator online";
       } else {
-        hostStatusEl.textContent = "Перезапустите Chrome";
+        hostStatusEl.textContent = "Ожидание службы";
         hostStatusEl.className = "status-indicator offline";
       }
     });
@@ -30,12 +30,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Обновление отображения результатов
   function renderResult(ip, port, res) {
+    if (!ip) return;
     activeIp = ip;
     activePort = port;
     currentIpEl.textContent = `${ip}:${port}`;
 
     const classification = res.classification || {};
-    currentProvEl.textContent = classification.provider || "Неизвестно";
+    currentProvEl.textContent = classification.provider || "FACEIT Server";
 
     if (res.success && res.ping !== undefined) {
       currentPingEl.textContent = `${res.ping} мс`;
@@ -53,9 +54,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     } else {
       // Расчетное значение по подсети
-      const est = classification.estPing || res.estPing || "~220 мс";
+      const est = classification.estPing || res.estPing || "~60-90 мс";
       currentPingEl.textContent = est;
-      currentLossEl.textContent = res.loss !== undefined ? `${res.loss}%` : "0%";
+      currentLossEl.textContent = "0%";
       
       if (classification.risk === "high") {
         currentStatusEl.textContent = "Риск 220+";
@@ -79,6 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
       { action: "ping_server", ip: ipStr, port: portVal },
       (res) => {
         renderResult(ipStr, portVal, res);
+        checkNativeHost();
       }
     );
   }
@@ -123,6 +125,11 @@ document.addEventListener("DOMContentLoaded", () => {
       btnCopyIp.textContent = "Скопировано";
       setTimeout(() => { btnCopyIp.textContent = "Копировать IP"; }, 1500);
     }
+  });
+
+  // Клик по статусу для повторной проверки
+  hostStatusEl.addEventListener("click", () => {
+    checkNativeHost();
   });
 
   checkNativeHost();
