@@ -1,7 +1,15 @@
-$ErrorActionPreference = "Stop"
+﻿$ErrorActionPreference = "Stop"
 
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$pyExe = (Get-Command python -ErrorAction SilentlyContinue).Source
+if (-not $pyExe) {
+    $pyExe = Join-Path $env:LOCALAPPDATA "Python\bin\python.exe"
+}
+
 $batPath = Join-Path $scriptDir "faceit_ping_host.bat"
+$batContent = "@echo off`r`n`"$pyExe`" -u `"%~dp0faceit_ping_host.py`"`r`n"
+[System.IO.File]::WriteAllText($batPath, $batContent, [System.Text.Encoding]::ASCII)
+
 $escapedBatPath = $batPath.Replace('\', '\\')
 $jsonPath = Join-Path $scriptDir "com.faceit.ping.inspector.json"
 
@@ -27,3 +35,4 @@ if (-not (Test-Path $regPath)) {
 Set-ItemProperty -Path $regPath -Name "(default)" -Value $jsonPath
 
 Write-Output "Хост зарегистрирован: $jsonPath"
+Write-Output "Python: $pyExe"

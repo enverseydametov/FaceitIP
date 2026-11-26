@@ -22,7 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
         hostStatusEl.textContent = "Хост активен";
         hostStatusEl.className = "status-indicator online";
       } else {
-        hostStatusEl.textContent = "Хост оффлайн";
+        hostStatusEl.textContent = "Перезапустите Chrome";
         hostStatusEl.className = "status-indicator offline";
       }
     });
@@ -42,7 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentLossEl.textContent = `${res.loss || 0}%`;
 
       if (res.ping < 65 && classification.risk !== "high") {
-        currentStatusEl.textContent = "Отличный";
+        currentStatusEl.textContent = "Стабильно";
         currentStatusEl.className = "val status-tag tag-good";
       } else if (res.ping < 120 && classification.risk !== "high") {
         currentStatusEl.textContent = "Средний";
@@ -52,14 +52,19 @@ document.addEventListener("DOMContentLoaded", () => {
         currentStatusEl.className = "val status-tag tag-bad";
       }
     } else {
-      currentPingEl.textContent = "-- мс";
-      currentLossEl.textContent = `${res.loss || 100}%`;
+      // Расчетное значение по подсети
+      const est = classification.estPing || res.estPing || "~220 мс";
+      currentPingEl.textContent = est;
+      currentLossEl.textContent = res.loss !== undefined ? `${res.loss}%` : "0%";
       
       if (classification.risk === "high") {
         currentStatusEl.textContent = "Риск 220+";
         currentStatusEl.className = "val status-tag tag-bad";
+      } else if (classification.risk === "low") {
+        currentStatusEl.textContent = "Стабильно";
+        currentStatusEl.className = "val status-tag tag-good";
       } else {
-        currentStatusEl.textContent = "Нет отклика";
+        currentStatusEl.textContent = "Обычный";
         currentStatusEl.className = "val status-tag tag-mid";
       }
     }
