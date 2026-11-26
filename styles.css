@@ -1,118 +1,173 @@
-/* Стили виджета проверки пинга FACEIT */
-#faceit-ping-badge {
-  display: block !important;
-  margin: 12px 0 !important;
-  padding: 12px 16px !important;
-  background: #15181c !important;
-  border: 1px solid #2d333b !important;
+/* Плавающий HUD FACEIT Ping поверх сайта */
+#faceit-ping-floating-hud {
+  position: fixed !important;
+  top: 14px !important;
+  right: 140px !important;
+  z-index: 2147483647 !important;
+  background: #14171a !important;
+  border: 1px solid #ff5500 !important;
   border-radius: 8px !important;
+  padding: 8px 12px !important;
   color: #f0f6fc !important;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-  font-size: 13px !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  z-index: 9999 !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+  font-size: 12px !important;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6) !important;
+  min-width: 220px !important;
+  line-height: 1.4 !important;
 }
 
-.fip-header {
+.fip-hud-header {
   display: flex !important;
-  justify-content: space-between !important;
   align-items: center !important;
-  margin-bottom: 8px !important;
+  gap: 6px !important;
+  margin-bottom: 6px !important;
 }
 
-.fip-title {
-  font-weight: 700 !important;
-  font-size: 13px !important;
+.fip-hud-dot {
+  width: 8px !important;
+  height: 8px !important;
+  background: #ff5500 !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+}
+
+.fip-hud-brand {
+  font-weight: 800 !important;
+  font-size: 11px !important;
   color: #ff5500 !important;
-  text-transform: uppercase !important;
   letter-spacing: 0.5px !important;
 }
 
-.fip-badge {
-  padding: 2px 8px !important;
+.fip-hud-status {
+  margin-left: auto !important;
+  padding: 1px 6px !important;
   border-radius: 4px !important;
-  font-size: 11px !important;
+  font-size: 10px !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
 }
 
-.fip-good {
-  background: rgba(16, 185, 129, 0.2) !important;
+.fip-status-good {
+  background: rgba(16, 185, 129, 0.25) !important;
   color: #10b981 !important;
   border: 1px solid #10b981 !important;
 }
 
-.fip-mid {
-  background: rgba(245, 158, 11, 0.2) !important;
+.fip-status-mid {
+  background: rgba(245, 158, 11, 0.25) !important;
   color: #f59e0b !important;
   border: 1px solid #f59e0b !important;
 }
 
-.fip-bad {
-  background: rgba(239, 68, 68, 0.2) !important;
+.fip-status-bad {
+  background: rgba(239, 68, 68, 0.25) !important;
   color: #ef4444 !important;
   border: 1px solid #ef4444 !important;
 }
 
-.fip-pending {
-  background: rgba(107, 114, 128, 0.2) !important;
+.fip-status-pending {
+  background: rgba(107, 114, 128, 0.25) !important;
   color: #9ca3af !important;
   border: 1px solid #6b7280 !important;
 }
 
-.fip-body {
+.fip-hud-content {
   display: flex !important;
   flex-direction: column !important;
-  gap: 4px !important;
-  margin-bottom: 10px !important;
+  gap: 3px !important;
+  margin-bottom: 6px !important;
 }
 
-.fip-row {
+.fip-hud-row {
   display: flex !important;
   justify-content: space-between !important;
 }
 
-.fip-label {
+.fip-hud-label {
   color: #8b949e !important;
 }
 
-.fip-val {
+.fip-hud-val {
   font-weight: 600 !important;
   color: #e6edf3 !important;
 }
 
-.fip-footer {
-  display: flex !important;
-  gap: 8px !important;
+.fip-hud-highlight {
+  color: #ff5500 !important;
 }
 
-.fip-btn {
+.fip-hud-actions {
+  display: flex !important;
+  gap: 6px !important;
+}
+
+.fip-hud-btn {
   flex: 1 !important;
-  padding: 6px 12px !important;
+  padding: 4px 8px !important;
+  background: #ff5500 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  cursor: pointer !important;
+}
+
+.fip-hud-btn:hover {
+  background: #e04b00 !important;
+}
+
+.fip-hud-btn.secondary {
   background: #21262d !important;
   color: #c9d1d9 !important;
   border: 1px solid #30363d !important;
-  border-radius: 6px !important;
-  font-size: 12px !important;
-  font-weight: 500 !important;
-  cursor: pointer !important;
-  transition: all 0.15s ease-in-out !important;
 }
 
-.fip-btn:hover {
+.fip-hud-btn.secondary:hover {
   background: #30363d !important;
-  color: #ffffff !important;
+  color: #fff !important;
 }
 
-.fip-btn-refresh {
-  background: #ff5500 !important;
-  border-color: #ff5500 !important;
-  color: #ffffff !important;
+/* Встроенный виджет под кнопкой */
+#faceit-ping-inline {
+  display: block !important;
+  margin: 8px 0 !important;
+  padding: 8px 12px !important;
+  background: #181c21 !important;
+  border: 1px solid #2a313a !important;
+  border-radius: 6px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-.fip-btn-refresh:hover {
-  background: #e04b00 !important;
-  border-color: #e04b00 !important;
+.fip-inline-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  font-size: 12px !important;
+  color: #e6edf3 !important;
+}
+
+.fip-inline-title {
+  color: #8b949e !important;
+  font-weight: 700 !important;
+}
+
+.fip-inline-val {
+  font-weight: 800 !important;
+  color: #ff5500 !important;
+}
+
+.fip-inline-tag {
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+}
+
+.fip-inline-host {
+  margin-left: auto !important;
+  color: #8b949e !important;
+  font-size: 11px !important;
 }
