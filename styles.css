@@ -1,123 +1,118 @@
 /* Стили виджета проверки пинга FACEIT */
 #faceit-ping-badge {
-  display: block;
-  margin: 12px 0;
-  padding: 12px 16px;
-  background: #15181c;
-  border: 1px solid #2d333b;
-  border-radius: 8px;
-  color: #f0f6fc;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  font-size: 13px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  max-width: 380px;
-  z-index: 99999;
+  display: block !important;
+  margin: 12px 0 !important;
+  padding: 12px 16px !important;
+  background: #15181c !important;
+  border: 1px solid #2d333b !important;
+  border-radius: 8px !important;
+  color: #f0f6fc !important;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+  font-size: 13px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+  z-index: 9999 !important;
 }
 
 .fip-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  margin-bottom: 8px !important;
 }
 
 .fip-title {
-  font-weight: 700;
-  font-size: 14px;
-  color: #ff5500;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  color: #ff5500 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
 }
 
 .fip-badge {
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
+  padding: 2px 8px !important;
+  border-radius: 4px !important;
+  font-size: 11px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
 }
 
 .fip-good {
-  background: rgba(16, 185, 129, 0.2);
-  color: #10b981;
-  border: 1px solid #10b981;
+  background: rgba(16, 185, 129, 0.2) !important;
+  color: #10b981 !important;
+  border: 1px solid #10b981 !important;
 }
 
 .fip-mid {
-  background: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
-  border: 1px solid #f59e0b;
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #f59e0b !important;
+  border: 1px solid #f59e0b !important;
 }
 
 .fip-bad {
-  background: rgba(239, 68, 68, 0.2);
-  color: #ef4444;
-  border: 1px solid #ef4444;
+  background: rgba(239, 68, 68, 0.2) !important;
+  color: #ef4444 !important;
+  border: 1px solid #ef4444 !important;
 }
 
 .fip-pending {
-  background: rgba(107, 114, 128, 0.2);
-  color: #9ca3af;
-  border: 1px solid #6b7280;
-}
-
-.fip-warning {
-  background: rgba(245, 158, 11, 0.2);
-  color: #f59e0b;
-  border: 1px solid #f59e0b;
+  background: rgba(107, 114, 128, 0.2) !important;
+  color: #9ca3af !important;
+  border: 1px solid #6b7280 !important;
 }
 
 .fip-body {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-bottom: 10px;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 4px !important;
+  margin-bottom: 10px !important;
 }
 
 .fip-row {
-  display: flex;
-  justify-content: space-between;
+  display: flex !important;
+  justify-content: space-between !important;
 }
 
 .fip-label {
-  color: #8b949e;
+  color: #8b949e !important;
 }
 
 .fip-val {
-  font-weight: 600;
-  color: #e6edf3;
+  font-weight: 600 !important;
+  color: #e6edf3 !important;
 }
 
 .fip-footer {
-  display: flex;
-  gap: 8px;
+  display: flex !important;
+  gap: 8px !important;
 }
 
 .fip-btn {
-  flex: 1;
-  padding: 6px 12px;
-  background: #21262d;
-  color: #c9d1d9;
-  border: 1px solid #30363d;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s ease-in-out;
+  flex: 1 !important;
+  padding: 6px 12px !important;
+  background: #21262d !important;
+  color: #c9d1d9 !important;
+  border: 1px solid #30363d !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: all 0.15s ease-in-out !important;
 }
 
 .fip-btn:hover {
-  background: #30363d;
-  color: #ffffff;
+  background: #30363d !important;
+  color: #ffffff !important;
 }
 
 .fip-btn-refresh {
-  background: #ff5500;
-  border-color: #ff5500;
-  color: #ffffff;
+  background: #ff5500 !important;
+  border-color: #ff5500 !important;
+  color: #ffffff !important;
 }
 
 .fip-btn-refresh:hover {
-  background: #e04b00;
-  border-color: #e04b00;
+  background: #e04b00 !important;
+  border-color: #e04b00 !important;
 }
