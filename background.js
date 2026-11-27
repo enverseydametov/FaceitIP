@@ -4,33 +4,35 @@ const NATIVE_HOST = "com.faceit.ping.inspector";
 // Локальная база классификации подсетей
 function classifySubnet(ip) {
   if (!ip) return { provider: "Неизвестно", risk: "normal", warning: "Обычный сервер", estPing: "--" };
+  const cleanIp = String(ip).split(':')[0].trim();
   
-  if (ip.startsWith("170.168.20.")) {
+  if (cleanIp.startsWith("170.168.20.")) {
     return { provider: "Castles.pro (M9)", risk: "high", warning: "Высокий риск (220+ мс)", estPing: "220-245 мс" };
   }
-  if (ip.startsWith("195.208.210.")) {
+  if (cleanIp.startsWith("195.208.210.")) {
     return { provider: "Castles.pro (M9-IX)", risk: "high", warning: "Проблемный стык MSK-IX", estPing: "215-240 мс" };
   }
-  if (ip.startsWith("140.174.177.") || ip.startsWith("108.181.60.")) {
+  if (cleanIp.startsWith("140.174.177.") || cleanIp.startsWith("108.181.60.")) {
     return { provider: "Psychz Networks", risk: "high", warning: "Сбой BGP (210+ мс)", estPing: "210-235 мс" };
   }
-  if (ip.startsWith("92.223.")) {
+  if (cleanIp.startsWith("92.223.")) {
     return { provider: "G-Core Labs", risk: "low", warning: "Стабильный маршрут", estPing: "35-55 мс" };
   }
-  if (ip.startsWith("169.254.133.")) {
+  if (cleanIp.startsWith("169.254.133.")) {
     return { provider: "DDoS Guard", risk: "low", warning: "Вход дата-центра", estPing: "50-55 мс" };
   }
-  return { provider: "FACEIT Server", risk: "normal", warning: "Стандартный узел", estPing: "~60-90 мс" };
+  return { provider: "FACEIT Server", risk: "normal", warning: "Стандартный узел", estPing: "~50-90 мс" };
 }
 
 // Запрос пинга через нативный хост
 function queryNativePing(ip, port) {
-  const classification = classifySubnet(ip);
+  const cleanIp = String(ip).split(':')[0].trim();
+  const classification = classifySubnet(cleanIp);
   return new Promise((resolve) => {
     try {
       chrome.runtime.sendNativeMessage(
         NATIVE_HOST,
-        { action: "ping", ip: ip, port: port },
+        { action: "ping", ip: cleanIp, port: port },
         (response) => {
           if (chrome.runtime.lastError || !response) {
             resolve({
@@ -63,14 +65,18 @@ function queryNativePing(ip, port) {
 
 // Запрос трассировки через нативный хост
 function queryNativeTrace(ip) {
+  const cleanIp = String(ip).split(':')[0].trim();
   return new Promise((resolve) => {
     try {
       chrome.runtime.sendNativeMessage(
         NATIVE_HOST,
-        { action: "trace", ip: ip },
+        { action: "trace", ip: cleanIp },
         (response) => {
-          if (chrome.runtime.lastError) {
-            resolve({ success: false, error: chrome.runtime.lastError.message });
+          if (chrome.runtime.lastError || !response) {
+            resolve({
+              success: false,
+              error: chrome.runtime.lastError ? chrome.runtime.lastError.message : "Нет связи с хостом"
+            });
           } else {
             resolve(response);
           }

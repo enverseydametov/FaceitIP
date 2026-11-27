@@ -5,7 +5,6 @@ let currentPort = null;
 let hudElement = null;
 let isCollapsed = false;
 let isFetchingApi = false;
-let traceData = null;
 
 // Извлечение MatchId из адресной строки
 function getMatchIdFromUrl() {
@@ -180,7 +179,9 @@ function ensureFloatingHud() {
   // Копирование
   btnCopy.addEventListener('click', () => {
     if (currentIp) {
-      navigator.clipboard.writeText(`connect ${currentIp}:${currentPort}`);
+      const cleanIp = String(currentIp).split(':')[0].trim();
+      const port = currentPort || 27015;
+      navigator.clipboard.writeText(`connect ${cleanIp}:${port}`);
       btnCopy.textContent = "Готово";
       setTimeout(() => { btnCopy.textContent = "Копия"; }, 1500);
     }
@@ -224,7 +225,9 @@ function updateUi(server, pingData) {
     return;
   }
 
-  if (valIp) valIp.textContent = `${server.ip}:${server.port}`;
+  const cleanIp = String(server.ip).split(':')[0].trim();
+  const port = server.port || 27015;
+  if (valIp) valIp.textContent = `${cleanIp}:${port}`;
 
   const classification = (pingData && pingData.classification) || {};
   if (valNode) valNode.textContent = classification.provider || "FACEIT Server";
@@ -260,29 +263,36 @@ function updateUi(server, pingData) {
 
 // Запуск пинга
 function runPing(ip, port) {
+  const cleanIp = String(ip).split(':')[0].trim();
   const statusBadge = document.getElementById('fip-status-badge');
   if (statusBadge) {
     statusBadge.textContent = "Замер...";
     statusBadge.className = "fip-badge fip-status-pending";
   }
 
-  chrome.runtime.sendMessage({ action: "ping_server", ip: ip, port: port }, (resp) => {
-    updateUi({ ip: ip, port: port }, resp);
+  chrome.runtime.sendMessage({ action: "ping_server", ip: cleanIp, port: port }, (resp) => {
+    updateUi({ ip: cleanIp, port: port }, resp);
   });
 }
 
 // Запуск детальной трассировки
 function runTrace(ip, port) {
+  const cleanIp = String(ip).split(':')[0].trim();
   const traceBox = document.getElementById('fip-trace-box');
   const traceList = document.getElementById('fip-trace-list');
+  const btnTrace = document.getElementById('fip-btn-trace');
   if (!traceBox || !traceList) return;
 
   traceBox.classList.remove('fip-hidden');
-  traceList.innerHTML = `<div class="fip-trace-loading">Трассировка ${ip}...</div>`;
+  traceList.innerHTML = `<div class="fip-trace-loading">Трассировка ${cleanIp}...</div>`;
+  if (btnTrace) btnTrace.textContent = "...";
 
-  chrome.runtime.sendMessage({ action: "trace_server", ip: ip }, (resp) => {
-    if (!resp || !resp.success || !resp.hops) {
-      traceList.innerHTML = `<div class="fip-trace-err">Сбой трассировки</div>`;
+  chrome.runtime.sendMessage({ action: "trace_server", ip: cleanIp }, (resp) => {
+    if (btnTrace) btnTrace.textContent = "Маршрут";
+
+    if (!resp || !resp.success || !resp.hops || resp.hops.length === 0) {
+      const errMsg = (resp && resp.error) ? resp.error : "Сбой трассировки";
+      traceList.innerHTML = `<div class="fip-trace-err">${errMsg}</div>`;
       return;
     }
 

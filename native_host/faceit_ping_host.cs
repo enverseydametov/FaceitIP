@@ -71,17 +71,32 @@ namespace FaceitPingHost
             Match mAction = Regex.Match(json, "\"action\"\\s*:\\s*\"([^\"]+)\"");
             if (mAction.Success) action = mAction.Groups[1].Value.Trim().ToLower();
 
+            // Очистка от порта, если передан в строке ip (например "92.223.103.98:27033")
+            if (ipStr.Contains(":"))
+            {
+                string[] parts = ipStr.Split(':');
+                ipStr = parts[0].Trim();
+                if (parts.Length > 1)
+                {
+                    int parsedPort;
+                    if (int.TryParse(parts[1].Trim(), out parsedPort) && parsedPort > 0)
+                    {
+                        port = parsedPort;
+                    }
+                }
+            }
+
             IPAddress ip;
             if (!IPAddress.TryParse(ipStr, out ip) || ip.AddressFamily != AddressFamily.InterNetwork)
             {
-                return "{\"success\":false,\"error\":\"Некорректный IP\"}";
+                return "{\"success\":false,\"error\":\"Некорректный IP адрес\"}";
             }
 
             // Классификация подсети
             string provider = "FACEIT Server";
             string risk = "normal";
             string warning = "Стандартный узел";
-            string estPing = "~60-90 мс";
+            string estPing = "~50-90 мс";
 
             if (ipStr.StartsWith("170.168.20."))
             {
@@ -119,7 +134,7 @@ namespace FaceitPingHost
                 estPing = "50-55 мс";
             }
 
-            // Выполнение трассировки
+            // Трассировка
             if (action == "trace")
             {
                 string traceHopsJson = MeasureTrace(ip);
@@ -168,8 +183,8 @@ namespace FaceitPingHost
 
                 using (UdpClient client = new UdpClient())
                 {
-                    client.Client.ReceiveTimeout = 400;
-                    client.Client.SendTimeout = 400;
+                    client.Client.ReceiveTimeout = 350;
+                    client.Client.SendTimeout = 350;
                     IPEndPoint remoteEP = new IPEndPoint(ip, port);
 
                     Stopwatch sw = Stopwatch.StartNew();
@@ -197,7 +212,7 @@ namespace FaceitPingHost
             {
                 using (Ping ping = new Ping())
                 {
-                    PingReply reply = ping.Send(ip, 700);
+                    PingReply reply = ping.Send(ip, 650);
                     if (reply.Status == IPStatus.Success)
                     {
                         return (int)reply.RoundtripTime;
@@ -216,33 +231,62 @@ namespace FaceitPingHost
             sb.Append("[");
             byte[] buffer = new byte[32];
 
-            using (Ping ping = new Ping())
+            int maxHops = 12;
+            bool first = true;
+            int consecutiveTimeouts = 0;
+
+            for (int ttl = 1; ttl <= maxHops; ttl++)
             {
-                int maxHops = 12;
-                bool first = true;
+                string hopIp = "*";
+                long rtt = -1;
 
-                for (int ttl = 1; ttl <= maxHops; ttl++)
+                try
                 {
-                    PingOptions options = new PingOptions(ttl, true);
-                    Stopwatch sw = Stopwatch.StartNew();
-                    PingReply reply = ping.Send(targetIp, 500, buffer, options);
-                    sw.Stop();
+                    using (Ping ping = new Ping())
+                    {
+                        PingOptions options = new PingOptions(ttl, true);
+                        Stopwatch sw = Stopwatch.StartNew();
+                        PingReply reply = ping.Send(targetIp, 350, buffer, options);
+                        sw.Stop();
 
-                    string hopIp = (reply.Address != null) ? reply.Address.ToString() : "*";
-                    long rtt = (reply.Status == IPStatus.TimedOut) ? -1 : sw.ElapsedMilliseconds;
-                    string label = IdentifyHop(hopIp, ttl);
+                        if (reply.Address != null)
+                        {
+                            hopIp = reply.Address.ToString();
+                        }
 
-                    if (!first) sb.Append(",");
-                    first = false;
-
-                    sb.Append(string.Format(
-                        "{{\"hop\":{0},\"ip\":\"{1}\",\"rtt\":{2},\"label\":\"{3}\"}}",
-                        ttl, hopIp, rtt, label
-                    ));
-
-                    if (reply.Status == IPStatus.Success || hopIp == targetIp.ToString())
-                        break;
+                        if (reply.Status == IPStatus.Success || reply.Status == IPStatus.TtlExpired)
+                        {
+                            rtt = sw.ElapsedMilliseconds;
+                            consecutiveTimeouts = 0;
+                        }
+                        else
+                        {
+                            consecutiveTimeouts++;
+                        }
+                    }
                 }
+                catch
+                {
+                    consecutiveTimeouts++;
+                }
+
+                string label = IdentifyHop(hopIp, ttl);
+
+                if (!first) sb.Append(",");
+                first = false;
+
+                sb.Append(string.Format(
+                    "{{\"hop\":{0},\"ip\":\"{1}\",\"rtt\":{2},\"label\":\"{3}\"}}",
+                    ttl, hopIp, rtt, label
+                ));
+
+                // Если достигли цели
+                if (hopIp == targetIp.ToString())
+                    break;
+
+                // Если 3 таймаута подряд в конце (защита от DDoS блокирует ICMP на финале)
+                if (ttl >= 7 && consecutiveTimeouts >= 3)
+                    break;
             }
 
             sb.Append("]");
@@ -254,17 +298,17 @@ namespace FaceitPingHost
             if (ip == "*") return "Фильтр ICMP";
             if (ip.StartsWith("192.168.") || ip.StartsWith("10.") || ip.StartsWith("172.16.")) return "Домашний роутер";
             if (ip.StartsWith("5.251.") || ip.StartsWith("82.200.") || ip.StartsWith("95.59.") || ip.StartsWith("92.47.")) return "Казахтелеком";
-            if (ip.StartsWith("188.254.")) return "Ростелеком Стык";
+            if (ip.StartsWith("188.254.") || ip.StartsWith("188.128.")) return "Стык РФ";
             if (ip.StartsWith("195.208.215.")) return "Точка MSK-IX";
             if (ip.StartsWith("195.208.210.")) return "Castles.pro M9";
-            if (ip.StartsWith("169.254.133.")) return "Шлюз Дата-центра";
+            if (ip.StartsWith("169.254.")) return "Шлюз Дата-центра";
             if (ip.StartsWith("92.223.")) return "G-Core Labs";
-            if (ip.StartsWith("170.168.20.")) return "Сервер Castles";
+            if (ip.StartsWith("170.168.20.")) return "Castles.pro";
 
             if (hopIndex <= 2) return "Локальная сеть";
             if (hopIndex <= 5) return "Магистраль провайдера";
             if (hopIndex <= 8) return "Транзитный узел";
-            return "Игровой сервер";
+            return "Игровой узел";
         }
     }
 }
