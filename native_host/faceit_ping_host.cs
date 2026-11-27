@@ -6,6 +6,7 @@ using System.Net.NetworkInformation;
 using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Collections.Generic;
 
 namespace FaceitPingHost
 {
@@ -52,7 +53,6 @@ namespace FaceitPingHost
             }
             catch
             {
-                // Тихое завершение при закрытии пайпа Chrome
             }
         }
 
@@ -69,7 +69,7 @@ namespace FaceitPingHost
             if (mPort.Success) int.TryParse(mPort.Groups[1].Value, out port);
 
             Match mAction = Regex.Match(json, "\"action\"\\s*:\\s*\"([^\"]+)\"");
-            if (mAction.Success) action = mAction.Groups[1].Value.Trim();
+            if (mAction.Success) action = mAction.Groups[1].Value.Trim().ToLower();
 
             IPAddress ip;
             if (!IPAddress.TryParse(ipStr, out ip) || ip.AddressFamily != AddressFamily.InterNetwork)
@@ -119,12 +119,22 @@ namespace FaceitPingHost
                 estPing = "50-55 мс";
             }
 
+            // Выполнение трассировки
+            if (action == "trace")
+            {
+                string traceHopsJson = MeasureTrace(ip);
+                return string.Format(
+                    "{{\"success\":true,\"action\":\"trace\",\"ip\":\"{0}\",\"port\":{1},\"hops\":{2},\"classification\":{{\"provider\":\"{3}\",\"risk\":\"{4}\",\"warning\":\"{5}\",\"estPing\":\"{6}\"}}}}",
+                    ipStr, port, traceHopsJson, provider, risk, warning, estPing
+                );
+            }
+
             // Замер UDP CS2
             int? udpPing = MeasureUdp(ip, port);
             if (udpPing.HasValue)
             {
                 return string.Format(
-                    "{{\"success\":true,\"ip\":\"{0}\",\"port\":{1},\"ping\":{2},\"loss\":0,\"protocol\":\"UDP CS2\",\"classification\":{{\"provider\":\"{3}\",\"risk\":\"{4}\",\"warning\":\"{5}\",\"estPing\":\"{6}\"}}}}",
+                    "{{\"success\":true,\"action\":\"ping\",\"ip\":\"{0}\",\"port\":{1},\"ping\":{2},\"loss\":0,\"protocol\":\"UDP CS2\",\"classification\":{{\"provider\":\"{3}\",\"risk\":\"{4}\",\"warning\":\"{5}\",\"estPing\":\"{6}\"}}}}",
                     ipStr, port, udpPing.Value, provider, risk, warning, estPing
                 );
             }
@@ -134,14 +144,14 @@ namespace FaceitPingHost
             if (icmpPing.HasValue)
             {
                 return string.Format(
-                    "{{\"success\":true,\"ip\":\"{0}\",\"port\":{1},\"ping\":{2},\"loss\":0,\"protocol\":\"ICMP\",\"classification\":{{\"provider\":\"{3}\",\"risk\":\"{4}\",\"warning\":\"{5}\",\"estPing\":\"{6}\"}}}}",
+                    "{{\"success\":true,\"action\":\"ping\",\"ip\":\"{0}\",\"port\":{1},\"ping\":{2},\"loss\":0,\"protocol\":\"ICMP\",\"classification\":{{\"provider\":\"{3}\",\"risk\":\"{4}\",\"warning\":\"{5}\",\"estPing\":\"{6}\"}}}}",
                     ipStr, port, icmpPing.Value, provider, risk, warning, estPing
                 );
             }
 
-            // Если оба скрыты фильтрами
+            // Если скрыт
             return string.Format(
-                "{{\"success\":false,\"ip\":\"{0}\",\"port\":{1},\"loss\":100,\"error\":\"Скрыт фильтрами\",\"estPing\":\"{2}\",\"classification\":{{\"provider\":\"{3}\",\"risk\":\"{4}\",\"warning\":\"{5}\",\"estPing\":\"{2}\"}}}}",
+                "{{\"success\":false,\"action\":\"ping\",\"ip\":\"{0}\",\"port\":{1},\"loss\":100,\"error\":\"Скрыт фильтрами\",\"estPing\":\"{2}\",\"classification\":{{\"provider\":\"{3}\",\"risk\":\"{4}\",\"warning\":\"{5}\",\"estPing\":\"{2}\"}}}}",
                 ipStr, port, estPing, provider, risk, warning
             );
         }
@@ -198,6 +208,63 @@ namespace FaceitPingHost
             {
             }
             return null;
+        }
+
+        static string MeasureTrace(IPAddress targetIp)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append("[");
+            byte[] buffer = new byte[32];
+
+            using (Ping ping = new Ping())
+            {
+                int maxHops = 12;
+                bool first = true;
+
+                for (int ttl = 1; ttl <= maxHops; ttl++)
+                {
+                    PingOptions options = new PingOptions(ttl, true);
+                    Stopwatch sw = Stopwatch.StartNew();
+                    PingReply reply = ping.Send(targetIp, 500, buffer, options);
+                    sw.Stop();
+
+                    string hopIp = (reply.Address != null) ? reply.Address.ToString() : "*";
+                    long rtt = (reply.Status == IPStatus.TimedOut) ? -1 : sw.ElapsedMilliseconds;
+                    string label = IdentifyHop(hopIp, ttl);
+
+                    if (!first) sb.Append(",");
+                    first = false;
+
+                    sb.Append(string.Format(
+                        "{{\"hop\":{0},\"ip\":\"{1}\",\"rtt\":{2},\"label\":\"{3}\"}}",
+                        ttl, hopIp, rtt, label
+                    ));
+
+                    if (reply.Status == IPStatus.Success || hopIp == targetIp.ToString())
+                        break;
+                }
+            }
+
+            sb.Append("]");
+            return sb.ToString();
+        }
+
+        static string IdentifyHop(string ip, int hopIndex)
+        {
+            if (ip == "*") return "Фильтр ICMP";
+            if (ip.StartsWith("192.168.") || ip.StartsWith("10.") || ip.StartsWith("172.16.")) return "Домашний роутер";
+            if (ip.StartsWith("5.251.") || ip.StartsWith("82.200.") || ip.StartsWith("95.59.") || ip.StartsWith("92.47.")) return "Казахтелеком";
+            if (ip.StartsWith("188.254.")) return "Ростелеком Стык";
+            if (ip.StartsWith("195.208.215.")) return "Точка MSK-IX";
+            if (ip.StartsWith("195.208.210.")) return "Castles.pro M9";
+            if (ip.StartsWith("169.254.133.")) return "Шлюз Дата-центра";
+            if (ip.StartsWith("92.223.")) return "G-Core Labs";
+            if (ip.StartsWith("170.168.20.")) return "Сервер Castles";
+
+            if (hopIndex <= 2) return "Локальная сеть";
+            if (hopIndex <= 5) return "Магистраль провайдера";
+            if (hopIndex <= 8) return "Транзитный узел";
+            return "Игровой сервер";
         }
     }
 }

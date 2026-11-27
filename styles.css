@@ -1,29 +1,71 @@
-/* Плавающий HUD FACEIT Ping поверх сайта */
-#faceit-ping-floating-hud {
+/* Контейнер в правом нижнем углу */
+.fip-hud-container {
   position: fixed !important;
-  top: 14px !important;
-  right: 140px !important;
+  bottom: 24px !important;
+  right: 24px !important;
   z-index: 2147483647 !important;
-  background: #14171a !important;
-  border: 1px solid #ff5500 !important;
-  border-radius: 8px !important;
-  padding: 8px 12px !important;
-  color: #f0f6fc !important;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
   font-size: 12px !important;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.6) !important;
-  min-width: 220px !important;
   line-height: 1.4 !important;
+  user-select: none !important;
 }
 
-.fip-hud-header {
+/* Свернутая кнопка (таблетка) */
+.fip-hud-pill {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: #14171a !important;
+  border: 1px solid #ff5500 !important;
+  border-radius: 20px !important;
+  padding: 6px 14px !important;
+  color: #f0f6fc !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5) !important;
+  transition: transform 0.15s ease-in-out, background 0.15s !important;
+}
+
+.fip-hud-pill:hover {
+  transform: scale(1.05) !important;
+  background: #1b2026 !important;
+}
+
+.fip-pill-dot {
+  width: 8px !important;
+  height: 8px !important;
+  background: #ff5500 !important;
+  border-radius: 50% !important;
+  display: inline-block !important;
+  box-shadow: 0 0 8px rgba(255, 85, 0, 0.8) !important;
+}
+
+.fip-pill-text {
+  font-weight: 700 !important;
+  font-size: 12px !important;
+  color: #f0f6fc !important;
+  letter-spacing: 0.3px !important;
+}
+
+/* Развернутое окно */
+.fip-hud-card {
+  width: 290px !important;
+  background: #14171a !important;
+  border: 1px solid #ff5500 !important;
+  border-radius: 10px !important;
+  padding: 12px 14px !important;
+  color: #f0f6fc !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.65) !important;
+  box-sizing: border-box !important;
+}
+
+.fip-card-header {
   display: flex !important;
   align-items: center !important;
   gap: 6px !important;
-  margin-bottom: 6px !important;
+  margin-bottom: 10px !important;
 }
 
-.fip-hud-dot {
+.fip-header-dot {
   width: 8px !important;
   height: 8px !important;
   background: #ff5500 !important;
@@ -31,20 +73,36 @@
   display: inline-block !important;
 }
 
-.fip-hud-brand {
+.fip-header-title {
   font-weight: 800 !important;
   font-size: 11px !important;
   color: #ff5500 !important;
   letter-spacing: 0.5px !important;
 }
 
-.fip-hud-status {
-  margin-left: auto !important;
-  padding: 1px 6px !important;
+.fip-badge {
+  padding: 2px 6px !important;
   border-radius: 4px !important;
   font-size: 10px !important;
-  font-weight: 600 !important;
+  font-weight: 700 !important;
   text-transform: uppercase !important;
+  margin-left: auto !important;
+}
+
+.fip-btn-icon {
+  background: transparent !important;
+  border: none !important;
+  color: #8b949e !important;
+  font-size: 16px !important;
+  font-weight: bold !important;
+  cursor: pointer !important;
+  padding: 0 4px !important;
+  line-height: 1 !important;
+  margin-left: 6px !important;
+}
+
+.fip-btn-icon:hover {
+  color: #ffffff !important;
 }
 
 .fip-status-good {
@@ -71,103 +129,180 @@
   border: 1px solid #6b7280 !important;
 }
 
-.fip-hud-content {
+.fip-card-body {
   display: flex !important;
   flex-direction: column !important;
-  gap: 3px !important;
-  margin-bottom: 6px !important;
+  gap: 4px !important;
+  margin-bottom: 10px !important;
 }
 
-.fip-hud-row {
+.fip-row {
   display: flex !important;
   justify-content: space-between !important;
 }
 
-.fip-hud-label {
+.fip-label {
   color: #8b949e !important;
 }
 
-.fip-hud-val {
+.fip-val {
   font-weight: 600 !important;
   color: #e6edf3 !important;
 }
 
-.fip-hud-highlight {
+.fip-val-ping {
   color: #ff5500 !important;
+  font-weight: 700 !important;
 }
 
-.fip-hud-actions {
+.fip-card-actions {
   display: flex !important;
   gap: 6px !important;
 }
 
-.fip-hud-btn {
+.fip-btn {
   flex: 1 !important;
-  padding: 4px 8px !important;
-  background: #ff5500 !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 4px !important;
+  padding: 6px 8px !important;
+  border-radius: 5px !important;
   font-size: 11px !important;
   font-weight: 600 !important;
   cursor: pointer !important;
+  text-align: center !important;
+  transition: background 0.15s ease-in-out !important;
 }
 
-.fip-hud-btn:hover {
+.fip-btn-primary {
+  background: #ff5500 !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+.fip-btn-primary:hover {
   background: #e04b00 !important;
 }
 
-.fip-hud-btn.secondary {
+.fip-btn.secondary {
   background: #21262d !important;
   color: #c9d1d9 !important;
   border: 1px solid #30363d !important;
 }
 
-.fip-hud-btn.secondary:hover {
+.fip-btn.secondary:hover {
   background: #30363d !important;
-  color: #fff !important;
+  color: #ffffff !important;
 }
 
-/* Встроенный виджет под кнопкой */
-#faceit-ping-inline {
-  display: block !important;
-  margin: 8px 0 !important;
-  padding: 8px 12px !important;
-  background: #181c21 !important;
+/* Детальная трассировка */
+.fip-trace-box {
+  margin-top: 10px !important;
+  background: #0d1117 !important;
   border: 1px solid #2a313a !important;
   border-radius: 6px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-}
-
-.fip-inline-row {
+  padding: 8px !important;
+  max-height: 180px !important;
   display: flex !important;
+  flex-direction: column !important;
+}
+
+.fip-trace-header {
+  display: flex !important;
+  justify-content: space-between !important;
   align-items: center !important;
-  gap: 8px !important;
-  font-size: 12px !important;
-  color: #e6edf3 !important;
-}
-
-.fip-inline-title {
-  color: #8b949e !important;
+  font-size: 10px !important;
   font-weight: 700 !important;
+  color: #8b949e !important;
+  text-transform: uppercase !important;
+  margin-bottom: 6px !important;
+  border-bottom: 1px solid #21262d !important;
+  padding-bottom: 4px !important;
 }
 
-.fip-inline-val {
-  font-weight: 800 !important;
+.fip-trace-close {
+  cursor: pointer !important;
+  color: #8b949e !important;
+  font-size: 12px !important;
+}
+
+.fip-trace-close:hover {
   color: #ff5500 !important;
 }
 
-.fip-inline-tag {
-  padding: 1px 6px !important;
-  border-radius: 4px !important;
-  font-size: 10px !important;
-  font-weight: 700 !important;
-  text-transform: uppercase !important;
+.fip-trace-list {
+  overflow-y: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
 }
 
-.fip-inline-host {
-  margin-left: auto !important;
+.fip-trace-item {
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  font-size: 10px !important;
+  padding: 2px 0 !important;
+}
+
+.fip-hop-num {
   color: #8b949e !important;
+  width: 14px !important;
+  text-align: right !important;
+}
+
+.fip-hop-ip {
+  color: #c9d1d9 !important;
+  font-family: monospace !important;
+  flex: 1 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+.fip-hop-rtt {
+  font-weight: 700 !important;
+  min-width: 38px !important;
+  text-align: right !important;
+}
+
+.fip-hop-good {
+  color: #10b981 !important;
+}
+
+.fip-hop-mid {
+  color: #f59e0b !important;
+}
+
+.fip-hop-bad {
+  color: #ef4444 !important;
+}
+
+.fip-hop-timeout {
+  color: #6b7280 !important;
+}
+
+.fip-hop-lbl {
+  color: #8b949e !important;
+  font-size: 9px !important;
+  max-width: 80px !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  text-align: right !important;
+}
+
+.fip-trace-loading {
   font-size: 11px !important;
+  color: #8b949e !important;
+  text-align: center !important;
+  padding: 8px 0 !important;
+}
+
+.fip-trace-err {
+  font-size: 11px !important;
+  color: #ef4444 !important;
+  text-align: center !important;
+  padding: 6px 0 !important;
+}
+
+.fip-hidden {
+  display: none !important;
 }

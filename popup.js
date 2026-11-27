@@ -1,4 +1,4 @@
-// Логика интерфейса всплывающего окна
+// Логика всплывающего окна расширения
 document.addEventListener("DOMContentLoaded", () => {
   const hostStatusEl = document.getElementById("host-status");
   const currentIpEl = document.getElementById("current-ip");
@@ -10,12 +10,16 @@ document.addEventListener("DOMContentLoaded", () => {
   const manualIpInput = document.getElementById("manual-ip");
   const btnManualCheck = document.getElementById("btn-manual-check");
   const btnRefreshLast = document.getElementById("btn-refresh-last");
+  const btnTraceLast = document.getElementById("btn-trace-last");
   const btnCopyIp = document.getElementById("btn-copy-ip");
+
+  const traceBox = document.getElementById("popup-trace-box");
+  const traceList = document.getElementById("popup-trace-list");
+  const traceClose = document.getElementById("popup-trace-close");
 
   let activeIp = "";
   let activePort = 27015;
 
-  // Проверка статуса нативного хоста
   function checkNativeHost() {
     chrome.runtime.sendMessage({ action: "check_native_status" }, (res) => {
       if (res && res.connected) {
@@ -28,7 +32,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Обновление отображения результатов
   function renderResult(ip, port, res) {
     if (!ip) return;
     activeIp = ip;
@@ -53,25 +56,20 @@ document.addEventListener("DOMContentLoaded", () => {
         currentStatusEl.className = "val status-tag tag-bad";
       }
     } else {
-      // Расчетное значение по подсети
-      const est = classification.estPing || res.estPing || "~60-90 мс";
+      const est = classification.estPing || res.estPing || "~50-90 мс";
       currentPingEl.textContent = est;
       currentLossEl.textContent = "0%";
       
       if (classification.risk === "high") {
         currentStatusEl.textContent = "Риск 220+";
         currentStatusEl.className = "val status-tag tag-bad";
-      } else if (classification.risk === "low") {
-        currentStatusEl.textContent = "Стабильно";
-        currentStatusEl.className = "val status-tag tag-good";
       } else {
         currentStatusEl.textContent = "Обычный";
-        currentStatusEl.className = "val status-tag tag-mid";
+        currentStatusEl.className = "val status-tag tag-good";
       }
     }
   }
 
-  // Запуск проверки IP
   function performPing(ipStr, portVal) {
     currentStatusEl.textContent = "Замер...";
     currentStatusEl.className = "val status-tag tag-pending";
@@ -85,7 +83,37 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // Загрузка сохраненного состояния
+  function performTrace(ipStr) {
+    traceBox.classList.remove("hidden");
+    traceList.innerHTML = `<div class="trace-loading">Трассировка узлов...</div>`;
+
+    chrome.runtime.sendMessage({ action: "trace_server", ip: ipStr }, (resp) => {
+      if (!resp || !resp.success || !resp.hops) {
+        traceList.innerHTML = `<div class="trace-err">Сбой трассировки</div>`;
+        return;
+      }
+
+      let html = "";
+      resp.hops.forEach(h => {
+        let rttText = h.rtt >= 0 ? `${h.rtt} мс` : "*";
+        let rttClass = "hop-good";
+        if (h.rtt > 120) rttClass = "hop-bad";
+        else if (h.rtt > 65) rttClass = "hop-mid";
+        if (h.rtt === -1) rttClass = "hop-timeout";
+
+        html += `
+          <div class="trace-row">
+            <span class="hop-num">${h.hop}</span>
+            <span class="hop-ip">${h.ip}</span>
+            <span class="hop-rtt ${rttClass}">${rttText}</span>
+            <span class="hop-label">${h.label}</span>
+          </div>
+        `;
+      });
+      traceList.innerHTML = html;
+    });
+  }
+
   chrome.storage.local.get(["lastServer"], (data) => {
     if (data.lastServer) {
       const s = data.lastServer;
@@ -94,7 +122,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // Кнопка ручной проверки
   btnManualCheck.addEventListener("click", () => {
     const raw = manualIpInput.value.trim();
     if (!raw) return;
@@ -111,25 +138,28 @@ document.addEventListener("DOMContentLoaded", () => {
     performPing(ip, port);
   });
 
-  // Кнопка повторного замера
   btnRefreshLast.addEventListener("click", () => {
     if (activeIp) {
       performPing(activeIp, activePort);
     }
   });
 
-  // Кнопка копирования
+  btnTraceLast.addEventListener("click", () => {
+    if (activeIp) {
+      performTrace(activeIp);
+    }
+  });
+
+  traceClose.addEventListener("click", () => {
+    traceBox.classList.add("hidden");
+  });
+
   btnCopyIp.addEventListener("click", () => {
     if (activeIp) {
       navigator.clipboard.writeText(`connect ${activeIp}:${activePort}`);
       btnCopyIp.textContent = "Скопировано";
-      setTimeout(() => { btnCopyIp.textContent = "Копировать IP"; }, 1500);
+      setTimeout(() => { btnCopyIp.textContent = "Копия IP"; }, 1500);
     }
-  });
-
-  // Клик по статусу для повторной проверки
-  hostStatusEl.addEventListener("click", () => {
-    checkNativeHost();
   });
 
   checkNativeHost();

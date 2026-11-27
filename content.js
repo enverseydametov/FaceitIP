@@ -1,10 +1,11 @@
-// Контентный скрипт FACEIT Ping Inspector с плавающим HUD и авто-поиском
+// Контентный скрипт FACEIT Ping Inspector
 let activeMatchId = null;
 let currentIp = null;
 let currentPort = null;
 let hudElement = null;
-let inlineWidget = null;
+let isCollapsed = false;
 let isFetchingApi = false;
+let traceData = null;
 
 // Извлечение MatchId из адресной строки
 function getMatchIdFromUrl() {
@@ -12,30 +13,24 @@ function getMatchIdFromUrl() {
   return m ? m[1] : null;
 }
 
-// Запрос данных матча через авторизованный API браузера
+// Запрос данных матча через сессию браузера
 async function fetchMatchServerFromApi(matchId) {
   if (!matchId || isFetchingApi) return null;
   isFetchingApi = true;
   try {
     const res = await fetch(`https://api.faceit.com/match/v2/match/${matchId}`, {
       credentials: 'include',
-      headers: {
-        'Accept': 'application/json'
-      }
+      headers: { 'Accept': 'application/json' }
     });
     if (res.ok) {
       const data = await res.json();
       const p = data.payload || {};
-      
-      // Поиск объекта сервера в разных ветках ответа
       if (p.server && p.server.ip) {
         return { ip: p.server.ip, port: parseInt(p.server.port || 27015, 10) };
       }
       if (p.configured_server && p.configured_server.ip) {
         return { ip: p.configured_server.ip, port: parseInt(p.configured_server.port || 27015, 10) };
       }
-      
-      // Рекурсивный поиск IP:port в JSON
       const found = deepSearchServerInObj(p, 0);
       if (found) return found;
     }
@@ -60,16 +55,14 @@ function deepSearchServerInObj(obj, depth) {
   return null;
 }
 
-// Поиск IP в DOM страницы
+// Поиск IP в DOM
 function scanDomForServer() {
-  // 1. Поиск в ссылках steam://connect
   const steamLinks = document.querySelectorAll('a[href*="steam://connect/"], a[href*=":27"]');
   for (const a of steamLinks) {
     const m = a.href.match(/([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):([0-9]{4,5})/);
     if (m) return { ip: m[1], port: parseInt(m[2], 10) };
   }
 
-  // 2. Поиск по атрибутам клипборда и data-тегам
   const attrEls = document.querySelectorAll('[data-clipboard-text], [data-ip], [data-value], [title], [aria-label]');
   for (const el of attrEls) {
     const val = el.getAttribute('data-clipboard-text') || el.getAttribute('data-ip') || el.title || el.getAttribute('aria-label') || '';
@@ -77,7 +70,6 @@ function scanDomForServer() {
     if (m) return { ip: m[1], port: parseInt(m[2], 10) };
   }
 
-  // 3. Поиск по тексту в теле документа
   const text = document.body ? document.body.innerText : '';
   const tm = text.match(/(?:connect\s+)?([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}):([0-9]{4,5})/i);
   if (tm) return { ip: tm[1], port: parseInt(tm[2], 10) };
@@ -85,43 +77,87 @@ function scanDomForServer() {
   return null;
 }
 
-// Создание плавающего HUD индикатора (всегда поверх страницы)
+// Создание плавающего виджета снизу справа
 function ensureFloatingHud() {
   if (hudElement && document.contains(hudElement)) return;
 
   hudElement = document.createElement('div');
-  hudElement.id = 'faceit-ping-floating-hud';
+  hudElement.id = 'faceit-ping-hud';
+  hudElement.className = 'fip-hud-container';
   hudElement.innerHTML = `
-    <div class="fip-hud-header">
-      <span class="fip-hud-dot"></span>
-      <span class="fip-hud-brand">FACEIT PING</span>
-      <span class="fip-hud-status fip-status-pending">Поиск...</span>
+    <!-- Кнопка свернутого состояния -->
+    <div id="fip-hud-pill" class="fip-hud-pill">
+      <span class="fip-pill-dot"></span>
+      <span id="fip-pill-text" class="fip-pill-text">PING</span>
     </div>
-    <div class="fip-hud-content">
-      <div class="fip-hud-row">
-        <span class="fip-hud-label">Сервер:</span>
-        <span id="fip-hud-ip" class="fip-hud-val">Ожидание матча</span>
+
+    <!-- Полное развернутое окно -->
+    <div id="fip-hud-card" class="fip-hud-card">
+      <div class="fip-card-header">
+        <span class="fip-header-dot"></span>
+        <span class="fip-header-title">FACEIT PING</span>
+        <span id="fip-status-badge" class="fip-badge fip-status-pending">Поиск...</span>
+        <button id="fip-btn-toggle" class="fip-btn-icon" title="Свернуть">-</button>
       </div>
-      <div class="fip-hud-row">
-        <span class="fip-hud-label">Задержка:</span>
-        <span id="fip-hud-ping" class="fip-hud-val fip-hud-highlight">-- мс</span>
+
+      <div class="fip-card-body">
+        <div class="fip-row">
+          <span class="fip-label">Сервер:</span>
+          <span id="fip-val-ip" class="fip-val">Ожидание...</span>
+        </div>
+        <div class="fip-row">
+          <span class="fip-label">Задержка:</span>
+          <span id="fip-val-ping" class="fip-val fip-val-ping">-- мс</span>
+        </div>
+        <div class="fip-row">
+          <span class="fip-label">Узел:</span>
+          <span id="fip-val-node" class="fip-val">--</span>
+        </div>
       </div>
-      <div class="fip-hud-row">
-        <span class="fip-hud-label">Узел:</span>
-        <span id="fip-hud-node" class="fip-hud-val">--</span>
+
+      <div class="fip-card-actions">
+        <button id="fip-btn-check" class="fip-btn fip-btn-primary">Замер</button>
+        <button id="fip-btn-trace" class="fip-btn secondary">Маршрут</button>
+        <button id="fip-btn-copy" class="fip-btn secondary">Копия</button>
       </div>
-    </div>
-    <div class="fip-hud-actions">
-      <button id="fip-hud-btn-check" class="fip-hud-btn">Замер</button>
-      <button id="fip-hud-btn-copy" class="fip-hud-btn secondary">Копия</button>
+
+      <!-- Детальная трассировка -->
+      <div id="fip-trace-box" class="fip-trace-box fip-hidden">
+        <div class="fip-trace-header">
+          <span>Трассировка узлов</span>
+          <span id="fip-trace-close" class="fip-trace-close">x</span>
+        </div>
+        <div id="fip-trace-list" class="fip-trace-list">
+          <div class="fip-trace-loading">Загрузка маршрута...</div>
+        </div>
+      </div>
     </div>
   `;
 
   document.body.appendChild(hudElement);
 
-  const btnCheck = hudElement.querySelector('#fip-hud-btn-check');
-  const btnCopy = hudElement.querySelector('#fip-hud-btn-copy');
+  const pill = hudElement.querySelector('#fip-hud-pill');
+  const card = hudElement.querySelector('#fip-hud-card');
+  const btnToggle = hudElement.querySelector('#fip-btn-toggle');
+  const btnCheck = hudElement.querySelector('#fip-btn-check');
+  const btnTrace = hudElement.querySelector('#fip-btn-trace');
+  const btnCopy = hudElement.querySelector('#fip-btn-copy');
+  const traceBox = hudElement.querySelector('#fip-trace-box');
+  const traceClose = hudElement.querySelector('#fip-trace-close');
 
+  // Сворачивание и разворачивание
+  pill.addEventListener('click', () => {
+    isCollapsed = false;
+    applyCollapseState();
+  });
+
+  btnToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    isCollapsed = true;
+    applyCollapseState();
+  });
+
+  // Замер
   btnCheck.addEventListener('click', () => {
     if (currentIp) {
       runPing(currentIp, currentPort);
@@ -130,6 +166,18 @@ function ensureFloatingHud() {
     }
   });
 
+  // Трассировка
+  btnTrace.addEventListener('click', () => {
+    if (currentIp) {
+      runTrace(currentIp, currentPort);
+    }
+  });
+
+  traceClose.addEventListener('click', () => {
+    traceBox.classList.add('fip-hidden');
+  });
+
+  // Копирование
   btnCopy.addEventListener('click', () => {
     if (currentIp) {
       navigator.clipboard.writeText(`connect ${currentIp}:${currentPort}`);
@@ -137,92 +185,85 @@ function ensureFloatingHud() {
       setTimeout(() => { btnCopy.textContent = "Копия"; }, 1500);
     }
   });
+
+  applyCollapseState();
 }
 
-// Создание встроенного виджета под кнопкой
-function ensureInlineWidget(btn) {
-  if (!btn) return;
-  const container = btn.closest('div') || btn.parentElement;
-  if (!container) return;
-
-  if (!inlineWidget || !document.contains(inlineWidget)) {
-    inlineWidget = document.createElement('div');
-    inlineWidget.id = 'faceit-ping-inline';
-    inlineWidget.className = 'fip-inline-card';
-    container.parentElement.insertBefore(inlineWidget, container.nextSibling);
+function applyCollapseState() {
+  if (!hudElement) return;
+  const pill = hudElement.querySelector('#fip-hud-pill');
+  const card = hudElement.querySelector('#fip-hud-card');
+  if (isCollapsed) {
+    pill.classList.remove('fip-hidden');
+    card.classList.add('fip-hidden');
+  } else {
+    pill.classList.add('fip-hidden');
+    card.classList.remove('fip-hidden');
   }
 }
 
-// Обновление интерфейсов HUD и виджета
+// Обновление UI
 function updateUi(server, pingData) {
   ensureFloatingHud();
 
-  const hudIp = document.getElementById('fip-hud-ip');
-  const hudPing = document.getElementById('fip-hud-ping');
-  const hudNode = document.getElementById('fip-hud-node');
-  const hudStatus = hudElement.querySelector('.fip-hud-status');
+  const pillText = document.getElementById('fip-pill-text');
+  const valIp = document.getElementById('fip-val-ip');
+  const valPing = document.getElementById('fip-val-ping');
+  const valNode = document.getElementById('fip-val-node');
+  const statusBadge = document.getElementById('fip-status-badge');
 
   if (!server) {
-    if (hudIp) hudIp.textContent = "Ожидание сервера";
-    if (hudPing) hudPing.textContent = "-- мс";
-    if (hudNode) hudNode.textContent = "Голосование...";
-    if (hudStatus) {
-      hudStatus.textContent = "Ожидание";
-      hudStatus.className = "fip-hud-status fip-status-pending";
+    if (valIp) valIp.textContent = "Ожидание сервера";
+    if (valPing) valPing.textContent = "-- мс";
+    if (valNode) valNode.textContent = "Голосование...";
+    if (statusBadge) {
+      statusBadge.textContent = "Ожидание";
+      statusBadge.className = "fip-badge fip-status-pending";
     }
+    if (pillText) pillText.textContent = "PING";
     return;
   }
 
-  if (hudIp) hudIp.textContent = `${server.ip}:${server.port}`;
+  if (valIp) valIp.textContent = `${server.ip}:${server.port}`;
 
   const classification = (pingData && pingData.classification) || {};
-  if (hudNode) hudNode.textContent = classification.provider || "FACEIT Server";
+  if (valNode) valNode.textContent = classification.provider || "FACEIT Server";
 
   if (pingData && pingData.success && pingData.ping !== undefined) {
-    if (hudPing) hudPing.textContent = `${pingData.ping} мс`;
+    if (valPing) valPing.textContent = `${pingData.ping} мс`;
+    if (pillText) pillText.textContent = `${pingData.ping} ms`;
 
     if (pingData.ping < 65 && classification.risk !== "high") {
-      hudStatus.textContent = "Стабильно";
-      hudStatus.className = "fip-hud-status fip-status-good";
+      statusBadge.textContent = "Стабильно";
+      statusBadge.className = "fip-badge fip-status-good";
     } else if (pingData.ping < 120 && classification.risk !== "high") {
-      hudStatus.textContent = "Средний";
-      hudStatus.className = "fip-hud-status fip-status-mid";
+      statusBadge.textContent = "Средний";
+      statusBadge.className = "fip-badge fip-status-mid";
     } else {
-      hudStatus.textContent = "Высокий пинг";
-      hudStatus.className = "fip-hud-status fip-status-bad";
+      statusBadge.textContent = "Высокий пинг";
+      statusBadge.className = "fip-badge fip-status-bad";
     }
   } else {
-    const est = classification.estPing || (pingData && pingData.estPing) || "~60-90 мс";
-    if (hudPing) hudPing.textContent = est;
+    const est = classification.estPing || (pingData && pingData.estPing) || "~50-90 мс";
+    if (valPing) valPing.textContent = est;
+    if (pillText) pillText.textContent = est;
 
     if (classification.risk === "high") {
-      hudStatus.textContent = "Риск 220+";
-      hudStatus.className = "fip-hud-status fip-status-bad";
+      statusBadge.textContent = "Риск 220+";
+      statusBadge.className = "fip-badge fip-status-bad";
     } else {
-      hudStatus.textContent = "Обычный";
-      hudStatus.className = "fip-hud-status fip-status-good";
+      statusBadge.textContent = "Обычный";
+      statusBadge.className = "fip-badge fip-status-good";
     }
-  }
-
-  // Обновление встроенного виджета, если кнопка на экране
-  if (inlineWidget && document.contains(inlineWidget)) {
-    inlineWidget.innerHTML = `
-      <div class="fip-inline-row">
-        <span class="fip-inline-title">ПИНГ СЕРВЕРА:</span>
-        <span class="fip-inline-val">${hudPing.textContent}</span>
-        <span class="fip-inline-tag ${hudStatus.className.replace('fip-hud-status', '')}">${hudStatus.textContent}</span>
-        <span class="fip-inline-host">${hudNode.textContent}</span>
-      </div>
-    `;
   }
 }
 
-// Запуск измерения пинга
+// Запуск пинга
 function runPing(ip, port) {
-  const hudStatus = hudElement ? hudElement.querySelector('.fip-hud-status') : null;
-  if (hudStatus) {
-    hudStatus.textContent = "Замер...";
-    hudStatus.className = "fip-hud-status fip-status-pending";
+  const statusBadge = document.getElementById('fip-status-badge');
+  if (statusBadge) {
+    statusBadge.textContent = "Замер...";
+    statusBadge.className = "fip-badge fip-status-pending";
   }
 
   chrome.runtime.sendMessage({ action: "ping_server", ip: ip, port: port }, (resp) => {
@@ -230,17 +271,46 @@ function runPing(ip, port) {
   });
 }
 
-// Главная процедура проверки страницы
+// Запуск детальной трассировки
+function runTrace(ip, port) {
+  const traceBox = document.getElementById('fip-trace-box');
+  const traceList = document.getElementById('fip-trace-list');
+  if (!traceBox || !traceList) return;
+
+  traceBox.classList.remove('fip-hidden');
+  traceList.innerHTML = `<div class="fip-trace-loading">Трассировка ${ip}...</div>`;
+
+  chrome.runtime.sendMessage({ action: "trace_server", ip: ip }, (resp) => {
+    if (!resp || !resp.success || !resp.hops) {
+      traceList.innerHTML = `<div class="fip-trace-err">Сбой трассировки</div>`;
+      return;
+    }
+
+    let html = '';
+    resp.hops.forEach(h => {
+      let rttText = h.rtt >= 0 ? `${h.rtt} мс` : '*';
+      let rttClass = 'fip-hop-good';
+      if (h.rtt > 120) rttClass = 'fip-hop-bad';
+      else if (h.rtt > 65) rttClass = 'fip-hop-mid';
+      if (h.rtt === -1) rttClass = 'fip-hop-timeout';
+
+      html += `
+        <div class="fip-trace-item">
+          <span class="fip-hop-num">${h.hop}</span>
+          <span class="fip-hop-ip">${h.ip}</span>
+          <span class="fip-hop-rtt ${rttClass}">${rttText}</span>
+          <span class="fip-hop-lbl">${h.label}</span>
+        </div>
+      `;
+    });
+    traceList.innerHTML = html;
+  });
+}
+
+// Периодическая проверка
 async function checkMatchAndDom() {
   ensureFloatingHud();
 
-  // 1. Проверяем наличие кнопки на странице
-  const btn = findConnectButton();
-  if (btn) {
-    ensureInlineWidget(btn);
-  }
-
-  // 2. Проверяем Match ID из URL
   const matchId = getMatchIdFromUrl();
   if (matchId && matchId !== activeMatchId) {
     activeMatchId = matchId;
@@ -257,7 +327,6 @@ async function checkMatchAndDom() {
     }
   }
 
-  // 3. Проверяем DOM
   const domServer = scanDomForServer();
   if (domServer && (domServer.ip !== currentIp || domServer.port !== currentPort)) {
     currentIp = domServer.ip;
@@ -266,7 +335,6 @@ async function checkMatchAndDom() {
     return;
   }
 
-  // 4. Проверяем сохраненное состояние
   if (!currentIp) {
     chrome.storage.local.get(["lastServer"], (data) => {
       if (data.lastServer && Date.now() - (data.lastServer.timestamp || 0) < 3600000) {
@@ -278,17 +346,5 @@ async function checkMatchAndDom() {
   }
 }
 
-function findConnectButton() {
-  const elements = document.querySelectorAll('button, a, div[role="button"]');
-  for (const el of elements) {
-    const t = (el.textContent || '').trim().toUpperCase();
-    if (t.includes('ПОДКЛЮЧИТЬСЯ') || t.includes('CONNECT')) {
-      return el;
-    }
-  }
-  return null;
-}
-
-// Запуск наблюдателя
 setInterval(checkMatchAndDom, 1500);
-setTimeout(checkMatchAndDom, 800);
+setTimeout(checkMatchAndDom, 500);

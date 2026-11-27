@@ -146,12 +146,19 @@ button {
 
 .actions {
   display: flex;
-  gap: 8px;
+  gap: 6px;
 }
 
 .action-btn {
   flex: 1;
-  padding: 8px;
+  padding: 7px 4px;
+  background: #ff5500;
+  color: #fff;
+  border: none;
+  font-size: 11px;
+}
+
+.action-btn.secondary {
   background: #21262d;
   color: #c9d1d9;
   border: 1px solid #30363d;
@@ -162,6 +169,119 @@ button {
   color: #fff;
 }
 
-.action-btn.secondary {
-  background: transparent;
+.action-btn:first-child:hover {
+  background: #e04b00;
+}
+
+/* Трассировка */
+.trace-box {
+  margin-top: 12px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  padding: 8px;
+  max-height: 180px;
+  display: flex;
+  flex-direction: column;
+}
+
+.trace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  color: #8b949e;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #21262d;
+  padding-bottom: 4px;
+}
+
+.trace-close {
+  cursor: pointer;
+  color: #8b949e;
+}
+
+.trace-close:hover {
+  color: #ff5500;
+}
+
+.trace-list {
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.trace-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+}
+
+.hop-num {
+  color: #8b949e;
+  width: 14px;
+  text-align: right;
+}
+
+.hop-ip {
+  color: #c9d1d9;
+  font-family: monospace;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hop-rtt {
+  font-weight: 700;
+  min-width: 38px;
+  text-align: right;
+}
+
+.hop-good {
+  color: #10b981;
+}
+
+.hop-mid {
+  color: #f59e0b;
+}
+
+.hop-bad {
+  color: #ef4444;
+}
+
+.hop-timeout {
+  color: #6b7280;
+}
+
+.hop-label {
+  color: #8b949e;
+  font-size: 9px;
+  max-width: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.trace-loading {
+  font-size: 11px;
+  color: #8b949e;
+  text-align: center;
+  padding: 6px 0;
+}
+
+.trace-err {
+  font-size: 11px;
+  color: #ef4444;
+  text-align: center;
+  padding: 6px 0;
+}
+
+.hidden {
+  display: none !important;
 }

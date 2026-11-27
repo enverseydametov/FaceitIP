@@ -9,7 +9,7 @@
   <div class="container">
     <div class="header">
       <div class="logo">FACEIT PING</div>
-      <div id="host-status" class="status-indicator offline">Хост оффлайн</div>
+      <div id="host-status" class="status-indicator online">Хост активен</div>
     </div>
 
     <div class="card">
@@ -39,14 +39,26 @@
     <div class="card">
       <div class="card-title">Ручная проверка</div>
       <div class="input-group">
-        <input type="text" id="manual-ip" placeholder="170.168.20.63:27029" />
+        <input type="text" id="manual-ip" placeholder="92.223.103.98:27033" />
         <button id="btn-manual-check">Замер</button>
       </div>
     </div>
 
     <div class="actions">
-      <button id="btn-refresh-last" class="action-btn">Обновить пинг</button>
-      <button id="btn-copy-ip" class="action-btn secondary">Копировать IP</button>
+      <button id="btn-refresh-last" class="action-btn">Обновить</button>
+      <button id="btn-trace-last" class="action-btn secondary">Маршрут</button>
+      <button id="btn-copy-ip" class="action-btn secondary">Копия IP</button>
+    </div>
+
+    <!-- Блок трассировки -->
+    <div id="popup-trace-box" class="trace-box hidden">
+      <div class="trace-header">
+        <span>Детальный маршрут узлов</span>
+        <span id="popup-trace-close" class="trace-close">x</span>
+      </div>
+      <div id="popup-trace-list" class="trace-list">
+        <div class="trace-loading">Загрузка...</div>
+      </div>
     </div>
   </div>
   <script src="popup.js"></script>

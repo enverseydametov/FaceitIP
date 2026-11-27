@@ -5,7 +5,6 @@ $csPath = Join-Path $scriptDir "faceit_ping_host.cs"
 $exePath = Join-Path $scriptDir "faceit_ping_host.exe"
 $cscPath = "C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
 
-# Компиляция при необходимости
 if ((Test-Path $cscPath) -and (Test-Path $csPath)) {
     & $cscPath /target:exe /optimize+ /out:"$exePath" /nologo "$csPath"
 }
@@ -34,5 +33,4 @@ if (-not (Test-Path $regPath)) {
 }
 Set-ItemProperty -Path $regPath -Name "(default)" -Value $jsonPath
 
-Write-Output "Хост зарегистрирован: $jsonPath"
-Write-Output "Исполняемый файл: $exePath"
+Write-Output "Host registered successfully"
